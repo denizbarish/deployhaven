@@ -1,6 +1,6 @@
 import { ConflictException, Injectable } from "@nestjs/common";
 import { prisma, Role } from "@deployhaven/db";
-import { hashPassword } from "./password.js";
+import { hashPassword, verifyPassword } from "./password.js";
 
 const SESSION_TTL_MS =
   Number(process.env.SESSION_TTL_HOURS ?? 168) * 60 * 60 * 1000;
@@ -20,6 +20,13 @@ export class AuthService {
       });
       return { userId: user.id, teamId: team.id };
     });
+  }
+
+  async validateUser(email: string, password: string) {
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) return null;
+    const ok = await verifyPassword(user.passwordHash, password);
+    return ok ? { id: user.id } : null;
   }
 
   async createSession(userId: string) {

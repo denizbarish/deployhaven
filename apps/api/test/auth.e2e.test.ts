@@ -39,3 +39,34 @@ describe("POST /auth/register", () => {
     expect(res.status).toBe(409);
   });
 });
+
+describe("POST /auth/login", () => {
+  let app: INestApplication;
+  const loginEmail = "login@dh.test";
+  beforeAll(async () => {
+    app = await createApp();
+    await app.init();
+    await request(app.getHttpServer())
+      .post("/auth/register")
+      .send({ email: loginEmail, password: "password123" });
+  });
+  afterAll(async () => {
+    await prisma.user.deleteMany({ where: { email: loginEmail } });
+    await app.close();
+  });
+
+  it("doğru bilgiyle 200 ve çerez", async () => {
+    const res = await request(app.getHttpServer())
+      .post("/auth/login")
+      .send({ email: loginEmail, password: "password123" });
+    expect(res.status).toBe(200);
+    expect(res.headers["set-cookie"][0]).toContain("dh_session");
+  });
+
+  it("yanlış parolayla 401", async () => {
+    const res = await request(app.getHttpServer())
+      .post("/auth/login")
+      .send({ email: loginEmail, password: "wrongpass1" });
+    expect(res.status).toBe(401);
+  });
+});
