@@ -28,7 +28,7 @@ Konumlandırma: Coolify/Dokploy sınıfında modern PaaS, iki ayrışma ekseniyl
 - Merkezi panelden çok sunucu yönetimi; her sunucuda hafif bir Node agent.
 - İki deploy kaynağı: (a) Git repo bağla + otomatik build (Nixpacks/Dockerfile),
   (b) doğrudan Docker Compose.
-- Otomatik TLS'li reverse proxy (Traefik veya Caddy).
+- Otomatik TLS'li reverse proxy (**Traefik**).
 - Cloudflare modülü: Tunnel, DNS kayıt yönetimi, proxy/SSL/WAF, Origin sertifikası +
   origin gizleme.
 - Şifreli secrets yönetimi, temel RBAC.
@@ -72,7 +72,7 @@ Hepsi TypeScript. Dört ana parça:
   4. Firewall (UFW: yalnız gerekli portlar; Cloudflare Tunnel'da 80/443 dahi kapalı).
   5. fail2ban + unattended-upgrades.
   6. Docker Engine + Compose plugin güvenli kurulum.
-  7. Reverse proxy (Traefik/Caddy) konuşlandırma.
+  7. Reverse proxy (Traefik) konuşlandırma.
   8. Deployhaven agent kurulumu + kayıt (enrollment token ile).
   9. cloudflared (Tunnel seçiliyse).
 - Her adım panelde canlı ilerleme + hata durumunda güvenli tekrar.
@@ -119,7 +119,7 @@ Hepsi TypeScript. Dört ana parça:
 - Provizyon: ssh2/node-ssh, idempotent TS modülleri.
 - Agent: Node + systemd (ileride tek binary).
 - Build: Nixpacks + Docker.
-- Proxy: Traefik veya Caddy (karar netleştirilecek, bkz. Açık Sorular).
+- Proxy: **Traefik** (Docker-native etiket keşfi, otomatik TLS).
 - Dağıtım: monorepo (pnpm/turborepo); tüm bileşenler Docker'lı (dockerize varsayılan).
 
 ## 8. Sürümleme / Kilometre Taşları
@@ -131,8 +131,6 @@ Hepsi TypeScript. Dört ana parça:
 6. **M5 – Sertleştirme & sürüm:** RBAC, audit log, güvenlik denetimi, açık kaynak sürüm 0.1.
 
 ## 9. Açık Sorular
-- Reverse proxy: Traefik mi Caddy mi? (Traefik = Docker-native etiket keşfi; Caddy = daha
-  basit TLS. M2 öncesi karar.)
 - Build motoru: Nixpacks yeterli mi, buildpacks alternatifi gerekli mi?
 - Agent'ın tek binary'ye geçiş fazı (Bun compile) hangi milestone'da?
 - Domain: `deployhaven.com` / `.dev` müsaitliği (kullanıcı doğrulayacak).
@@ -145,4 +143,5 @@ Hepsi TypeScript. Dört ana parça:
 - Cloudflare: **tam kapsam** (Tunnel + DNS + proxy/WAF + origin gizleme).
 - Kontrol düzlemi: **merkezi, çok sunucu, agent tabanlı**.
 - Stack: **tam TypeScript** (A yaklaşımı).
+- Reverse proxy: **Traefik**.
 - İsim: **Deployhaven** (npm + GitHub org `deployhaven` boş, doğrulandı).
