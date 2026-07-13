@@ -1,0 +1,120 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+model User {
+  id           String       @id @default(cuid())
+  email        String       @unique
+  passwordHash String
+  createdAt    DateTime     @default(now())
+  memberships  Membership[]
+  sessions     Session[]
+}
+
+model Team {
+  id          String       @id @default(cuid())
+  name        String
+  createdAt   DateTime     @default(now())
+  memberships Membership[]
+  servers     Server[]
+  projects    Project[]
+}
+
+model Membership {
+  id       String @id @default(cuid())
+  role     Role   @default(MEMBER)
+  userId   String
+  teamId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  team     Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  @@unique([userId, teamId])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+}
+
+model Server {
+  id        String         @id @default(cuid())
+  name      String
+  host      String
+  teamId    String
+  createdAt DateTime       @default(now())
+  team      Team           @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  runs      ProvisionRun[]
+}
+
+model ProvisionRun {
+  id        String   @id @default(cuid())
+  serverId  String
+  step      String
+  status    String
+  createdAt DateTime @default(now())
+  server    Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+}
+
+model Project {
+  id          String       @id @default(cuid())
+  name        String
+  teamId      String
+  createdAt   DateTime     @default(now())
+  team        Team         @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  deployments Deployment[]
+  domains     Domain[]
+}
+
+model Deployment {
+  id        String   @id @default(cuid())
+  projectId String
+  source    String
+  status    String
+  image     String?
+  createdAt DateTime @default(now())
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Domain {
+  id        String  @id @default(cuid())
+  projectId String
+  hostname  String  @unique
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model CloudflareAccount {
+  id          String @id @default(cuid())
+  teamId      String
+  tokenCipher String
+  createdAt   DateTime @default(now())
+}
+
+model Secret {
+  id        String   @id @default(cuid())
+  scope     String
+  key       String
+  cipher    String
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String?
+  action    String
+  meta      Json?
+  createdAt DateTime @default(now())
+}
