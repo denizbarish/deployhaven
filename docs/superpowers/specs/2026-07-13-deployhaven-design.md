@@ -118,7 +118,7 @@ Hepsi TypeScript. Dört ana parça:
 - Backend: NestJS, TypeScript, Postgres, Redis + BullMQ.
 - Provizyon: ssh2/node-ssh, idempotent TS modülleri.
 - Agent: Node + systemd (ileride tek binary).
-- Build: Nixpacks + Docker.
+- Build: **Nixpacks** + Docker (Dockerfile varsa öncelik onda; buildpacks MVP dışı).
 - Proxy: **Traefik** (Docker-native etiket keşfi, otomatik TLS).
 - Dağıtım: monorepo (pnpm/turborepo); tüm bileşenler Docker'lı (dockerize varsayılan).
 
@@ -131,7 +131,6 @@ Hepsi TypeScript. Dört ana parça:
 6. **M5 – Sertleştirme & sürüm:** RBAC, audit log, güvenlik denetimi, açık kaynak sürüm 0.1.
 
 ## 9. Açık Sorular
-- Build motoru: Nixpacks yeterli mi, buildpacks alternatifi gerekli mi?
 - Agent'ın tek binary'ye geçiş fazı (Bun compile) hangi milestone'da?
 - Domain: `deployhaven.com` / `.dev` müsaitliği (kullanıcı doğrulayacak).
 
@@ -144,4 +143,5 @@ Hepsi TypeScript. Dört ana parça:
 - Kontrol düzlemi: **merkezi, çok sunucu, agent tabanlı**.
 - Stack: **tam TypeScript** (A yaklaşımı).
 - Reverse proxy: **Traefik**.
+- Build motoru: **Nixpacks** (Dockerfile öncelikli; buildpacks MVP dışı).
 - İsim: **Deployhaven** (npm + GitHub org `deployhaven` boş, doğrulandı).
