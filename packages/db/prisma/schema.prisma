@@ -43,6 +43,7 @@ model Membership {
 
 model Session {
   id        String   @id @default(cuid())
+  tokenHash String   @unique
   userId    String
   expiresAt DateTime
   createdAt DateTime @default(now())
