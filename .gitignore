@@ -4,6 +4,7 @@ node_modules/
 !.env.example
 dist/
 .next/
+.turbo/
 *.log
 .DS_Store
 .superpowers/
