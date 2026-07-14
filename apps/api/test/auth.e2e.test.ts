@@ -101,3 +101,87 @@ describe("GET /auth/me", () => {
     expect(res.body.email).toBe(meEmail);
   });
 });
+
+// FIND-002: çerez değeri Session.id (cuid) DEĞİL, yüksek entropili rastgele
+// token olmalı; sahte/rastgele çerez 401 dönmeli.
+describe("Oturum çerezi CSPRNG token (FIND-002)", () => {
+  let app: INestApplication;
+  const secEmail = "sec@dh.test";
+  let cookie: string;
+  beforeAll(async () => {
+    app = await createApp();
+    await app.init();
+    const reg = await request(app.getHttpServer())
+      .post("/auth/register")
+      .send({ email: secEmail, password: "password123" });
+    cookie = reg.headers["set-cookie"][0];
+  });
+  afterAll(async () => {
+    await prisma.user.deleteMany({ where: { email: secEmail } });
+    await app.close();
+  });
+
+  it("çerez değeri hiçbir Session.id ile eşleşmez", async () => {
+    const user = await prisma.user.findUnique({ where: { email: secEmail } });
+    const sessions = await prisma.session.findMany({
+      where: { userId: user!.id },
+    });
+    expect(sessions.length).toBeGreaterThan(0);
+
+    const match = /dh_session=([^;]+)/.exec(cookie);
+    const tokenValue = decodeURIComponent(match![1]);
+    // Token uzun ve rastgele olmalı, cuid değil.
+    expect(tokenValue.length).toBeGreaterThan(30);
+    for (const s of sessions) {
+      expect(tokenValue).not.toBe(s.id);
+    }
+  });
+
+  it("sahte/rastgele çerez 401 döner", async () => {
+    const res = await request(app.getHttpServer())
+      .get("/auth/me")
+      .set("Cookie", "dh_session=forged-random-token-abc123");
+    expect(res.status).toBe(401);
+  });
+});
+
+// FIND-001: logout oturumu iptal eder; aynı çerezle sonraki istek 401 olur.
+describe("POST /auth/logout (FIND-001)", () => {
+  let app: INestApplication;
+  const outEmail = "logout@dh.test";
+  let cookie: string;
+  beforeAll(async () => {
+    app = await createApp();
+    await app.init();
+    const reg = await request(app.getHttpServer())
+      .post("/auth/register")
+      .send({ email: outEmail, password: "password123" });
+    cookie = reg.headers["set-cookie"][0];
+  });
+  afterAll(async () => {
+    await prisma.user.deleteMany({ where: { email: outEmail } });
+    await app.close();
+  });
+
+  it("çerezsiz logout 401", async () => {
+    const res = await request(app.getHttpServer()).post("/auth/logout");
+    expect(res.status).toBe(401);
+  });
+
+  it("geçerli çerezle logout başarılı ve oturum artık geçersiz", async () => {
+    const before = await request(app.getHttpServer())
+      .get("/auth/me")
+      .set("Cookie", cookie);
+    expect(before.status).toBe(200);
+
+    const out = await request(app.getHttpServer())
+      .post("/auth/logout")
+      .set("Cookie", cookie);
+    expect(out.status).toBe(204);
+
+    const after = await request(app.getHttpServer())
+      .get("/auth/me")
+      .set("Cookie", cookie);
+    expect(after.status).toBe(401);
+  });
+});
