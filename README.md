@@ -19,8 +19,8 @@ pnpm dev
 
 ## Mimari
 
-- `apps/api` — NestJS kontrol düzlemi + auth
-- `apps/panel` — Next.js panel
-- `packages/db` — Prisma şeması + client
+- `apps/api`: NestJS kontrol düzlemi + auth
+- `apps/panel`: Next.js panel
+- `packages/db`: Prisma şeması + client
 
 Tasarım: `docs/superpowers/specs/2026-07-13-deployhaven-design.md`
