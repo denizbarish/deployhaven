@@ -33,4 +33,13 @@ export class AuthService {
     const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
     return prisma.session.create({ data: { userId, expiresAt } });
   }
+
+  async getUserFromSession(sessionId: string) {
+    const session = await prisma.session.findUnique({
+      where: { id: sessionId },
+      include: { user: true },
+    });
+    if (!session || session.expiresAt < new Date()) return null;
+    return { id: session.user.id, email: session.user.email };
+  }
 }

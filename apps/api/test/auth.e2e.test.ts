@@ -70,3 +70,34 @@ describe("POST /auth/login", () => {
     expect(res.status).toBe(401);
   });
 });
+
+describe("GET /auth/me", () => {
+  let app: INestApplication;
+  const meEmail = "me@dh.test";
+  let cookie: string;
+  beforeAll(async () => {
+    app = await createApp();
+    await app.init();
+    const reg = await request(app.getHttpServer())
+      .post("/auth/register")
+      .send({ email: meEmail, password: "password123" });
+    cookie = reg.headers["set-cookie"][0];
+  });
+  afterAll(async () => {
+    await prisma.user.deleteMany({ where: { email: meEmail } });
+    await app.close();
+  });
+
+  it("çerezsiz 401", async () => {
+    const res = await request(app.getHttpServer()).get("/auth/me");
+    expect(res.status).toBe(401);
+  });
+
+  it("çerezle 200 ve kullanıcı bilgisi", async () => {
+    const res = await request(app.getHttpServer())
+      .get("/auth/me")
+      .set("Cookie", cookie);
+    expect(res.status).toBe(200);
+    expect(res.body.email).toBe(meEmail);
+  });
+});

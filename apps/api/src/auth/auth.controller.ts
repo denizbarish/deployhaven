@@ -1,14 +1,18 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   Post,
+  Req,
   Res,
   UnauthorizedException,
+  UseGuards,
 } from "@nestjs/common";
-import type { Response } from "express";
+import type { Request, Response } from "express";
 import { CredentialsDto } from "./dto.js";
 import { AuthService } from "./auth.service.js";
+import { SessionGuard } from "./session.guard.js";
 
 const COOKIE = process.env.SESSION_COOKIE_NAME ?? "dh_session";
 
@@ -49,5 +53,12 @@ export class AuthController {
       expires: session.expiresAt,
     });
     return { userId: user.id };
+  }
+
+  @Get("me")
+  @UseGuards(SessionGuard)
+  async me(@Req() req: Request & { userId: string }) {
+    const user = await this.auth.getUserFromSession(req.cookies[COOKIE]);
+    return { userId: req.userId, email: user?.email };
   }
 }
