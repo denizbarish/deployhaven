@@ -34,9 +34,11 @@ export function startProvisionWorker(getCreds: (serverId: string) => Promise<{
         expectedFingerprint: creds.hostKeyFingerprint,
       });
       // FIND-001 TOFU: ilk bağlantıda gözlenen host-key fingerprint'ini pinle.
+      // updateMany + hostKeyFingerprint:null koşulu ile atomik: eşzamanlı iki job'da
+      // yalnızca ilk yazan kazanır, sonrakiler mevcut pini ezmez.
       if (!creds.hostKeyFingerprint && runner.hostKeyFingerprint) {
-        await prisma.server.update({
-          where: { id: serverId },
+        await prisma.server.updateMany({
+          where: { id: serverId, hostKeyFingerprint: null },
           data: { hostKeyFingerprint: runner.hostKeyFingerprint },
         });
       }
