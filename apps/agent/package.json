@@ -1,0 +1,7 @@
+{
+  "name": "@deployhaven/agent",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": { "start": "node src/index.js", "build": "echo 'no build (plain js)'", "test": "echo 'no tests'", "lint": "echo 'no lint'" }
+}

@@ -62,6 +62,17 @@ model Server {
   createdAt    DateTime       @default(now())
   team         Team           @relation(fields: [teamId], references: [id], onDelete: Cascade)
   runs         ProvisionRun[]
+  agent        Agent?
+}
+
+model Agent {
+  id         String    @id @default(cuid())
+  serverId   String    @unique
+  tokenHash  String    @unique
+  status     String    @default("pending")
+  lastSeenAt DateTime?
+  createdAt  DateTime  @default(now())
+  server     Server    @relation(fields: [serverId], references: [id], onDelete: Cascade)
 }
 
 model ProvisionRun {
