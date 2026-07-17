@@ -58,6 +58,7 @@ model Server {
   sshUser      String         @default("root")
   sshPort      Int            @default(22)
   sshKeyCipher String?
+  hostKeyFingerprint String?
   teamId       String
   createdAt    DateTime       @default(now())
   team         Team           @relation(fields: [teamId], references: [id], onDelete: Cascade)
@@ -80,6 +81,7 @@ model ProvisionRun {
   serverId  String
   step      String
   status    String
+  error     String?
   createdAt DateTime @default(now())
   server    Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
 }
