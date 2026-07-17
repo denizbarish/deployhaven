@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from "@nestjs/common";
+import { ConflictException, Injectable, UnauthorizedException } from "@nestjs/common";
 import { createHash, randomBytes } from "node:crypto";
 import { prisma } from "@deployhaven/db";
 
@@ -8,7 +8,18 @@ function hash(token: string): string {
 
 @Injectable()
 export class AgentService {
-  async issueToken(serverId: string): Promise<string> {
+  /**
+   * Enroll token üretir. İlk basımda (ya da henüz enroll olmamış `pending`
+   * agent'ta) token oluşturur. Zaten enroll olmuş (status != "pending") bir
+   * agent varken sessizce ezmek yerine, açık `rotate: true` niyeti istenir;
+   * aksi halde ConflictException (409) fırlatır. Bu, çalışan agent'ın kaza/
+   * kötü niyetle geçersizleştirilmesini önler.
+   */
+  async issueToken(serverId: string, rotate = false): Promise<string> {
+    const existing = await prisma.agent.findUnique({ where: { serverId } });
+    if (existing && existing.status !== "pending" && !rotate) {
+      throw new ConflictException("agent zaten kayıtlı; rotate gerekli");
+    }
     const token = randomBytes(32).toString("base64url");
     await prisma.agent.upsert({
       where: { serverId },
