@@ -2,10 +2,13 @@ import { Controller, Get, Inject, Param, Post, HttpCode, UseGuards, Sse, Message
 import type { Request } from "express";
 import { Queue } from "bullmq";
 import { prisma } from "@deployhaven/db";
-import { interval, switchMap, from, map, Observable } from "rxjs";
+import { interval, switchMap, from, map, takeWhile, take, Observable } from "rxjs";
 import { SessionGuard } from "../auth/session.guard.js";
 import { PROVISION_QUEUE } from "../queue/queue.module.js";
 import { ServersService } from "../servers/servers.service.js";
+import { isTerminalRun, SSE_MAX_TICKS } from "./provision.stream.js";
+
+type ProvisionRunRow = { step: string; status: string };
 
 @Controller("servers/:id/provision")
 @UseGuards(SessionGuard)
@@ -39,6 +42,8 @@ export class ProvisionController {
   ): Promise<Observable<MessageEvent>> {
     await this.servers.assertOwned(req.userId, id);
     return interval(2000).pipe(
+      // FIND-004: sınırsız polling'i sınırla (maksimum süre / güvenlik ağı).
+      take(SSE_MAX_TICKS),
       switchMap(() =>
         from(
           prisma.provisionRun.findMany({
@@ -47,6 +52,9 @@ export class ProvisionController {
           }),
         ),
       ),
+      // Terminal duruma (failed adım veya son modül traefik done/skipped) ulaşınca
+      // son emit'i de gönderip stream'i sonlandır (inclusive).
+      takeWhile((rows: ProvisionRunRow[]) => !isTerminalRun(rows), true),
       map((rows): MessageEvent => ({ data: rows })),
     );
   }
