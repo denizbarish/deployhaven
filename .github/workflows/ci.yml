@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Build and test
+    runs-on: ubuntu-latest
+
+    env:
+      NODE_ENV: test
+      DATABASE_URL: "postgresql://deployhaven:deployhaven@localhost:5432/deployhaven?schema=public"
+      REDIS_URL: "redis://localhost:6379"
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: deployhaven
+          POSTGRES_PASSWORD: deployhaven
+          POSTGRES_DB: deployhaven
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U deployhaven"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Enable corepack
+        run: corepack enable
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm --filter @deployhaven/db db:generate
+
+      - name: Apply database migrations
+        run: pnpm --filter @deployhaven/db exec prisma migrate deploy
+
+      - name: Build
+        run: pnpm build
+
+      - name: Test db package
+        run: pnpm --filter @deployhaven/db test
+
+      - name: Test api package
+        run: pnpm --filter @deployhaven/api test
