@@ -1,5 +1,7 @@
 # Deployhaven
 
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+
 Açık kaynak, Linux-first, çok-sunucu PaaS. Boş bir Ubuntu sunucusunu uçtan uca
 provizyonlar (Docker + güvenlik sertleştirme + Cloudflare) ve kendi projeni
 Git/Compose ile canlıya alır.
@@ -24,3 +26,18 @@ pnpm dev
 - `packages/db`: Prisma şeması + client
 
 Tasarım: `docs/superpowers/specs/2026-07-13-deployhaven-design.md`
+
+## Katkı (Contributing)
+
+Katkılar memnuniyetle karşılanır. Geliştirme ortamı kurulumu, test çalıştırma,
+commit ve pull request kuralları için [CONTRIBUTING.md](CONTRIBUTING.md)
+dosyasına bakın.
+
+## Güvenlik (Security)
+
+Bir güvenlik açığı bulursanız lütfen herkese açık bir issue açmayın. Özel
+bildirim süreci için [SECURITY.md](SECURITY.md) dosyasına bakın.
+
+## Lisans (License)
+
+Apache License 2.0. Bkz. [LICENSE](LICENSE).
