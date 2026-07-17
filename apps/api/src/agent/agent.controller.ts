@@ -1,18 +1,28 @@
 import {
-  Body, Controller, Headers, HttpCode, Param, Post, UseGuards, UnauthorizedException,
+  Body, Controller, Headers, HttpCode, Param, Post, Req, UseGuards, UnauthorizedException,
 } from "@nestjs/common";
+import type { Request } from "express";
 import { SessionGuard } from "../auth/session.guard.js";
 import { AgentService } from "./agent.service.js";
+import { ServersService } from "../servers/servers.service.js";
 
 @Controller()
 export class AgentController {
-  constructor(private readonly agents: AgentService) {}
+  constructor(
+    private readonly agents: AgentService,
+    private readonly servers: ServersService,
+  ) {}
 
   @Post("servers/:id/agent/enroll-token")
   @UseGuards(SessionGuard)
   @HttpCode(201)
-  async token(@Param("id") id: string) {
-    return { token: await this.agents.issueToken(id) };
+  async token(
+    @Req() req: Request & { userId: string },
+    @Param("id") id: string,
+    @Body() body?: { rotate?: boolean },
+  ) {
+    await this.servers.assertOwned(req.userId, id);
+    return { token: await this.agents.issueToken(id, body?.rotate === true) };
   }
 
   @Post("agent/register")

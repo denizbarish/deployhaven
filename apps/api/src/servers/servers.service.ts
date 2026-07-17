@@ -11,6 +11,20 @@ export class ServersService {
     return m.teamId;
   }
 
+  /**
+   * Kaynak sahipliği kontrolü (IDOR koruması). Sunucunun teamId'si kullanıcının
+   * bir üyeliğine ait değilse NotFoundException fırlatır (varlık sızıntısını
+   * önlemek için Forbidden yerine NotFound). Tüm sunucu-kapsamlı endpoint'lerde
+   * işlemden önce çağrılmalıdır.
+   */
+  async assertOwned(userId: string, serverId: string): Promise<void> {
+    const server = await prisma.server.findFirst({
+      where: { id: serverId, team: { memberships: { some: { userId } } } },
+      select: { id: true },
+    });
+    if (!server) throw new NotFoundException("sunucu yok");
+  }
+
   async create(userId: string, dto: CreateServerDto) {
     const teamId = await this.teamIdFor(userId);
     const server = await prisma.server.create({
