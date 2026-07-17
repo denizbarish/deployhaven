@@ -1,0 +1,56 @@
+name: Bug report
+description: Report a problem with Deployhaven
+title: "bug: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug report. Please do not report
+        security vulnerabilities here: see SECURITY.md for private disclosure.
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear and concise description of the bug.
+      placeholder: What went wrong?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: How can we reproduce the behavior?
+      placeholder: |
+        1. Run '...'
+        2. Navigate to '...'
+        3. See error
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What actually happened? Include logs or error output if relevant.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Node version, pnpm version, affected component (api/panel/db), and commit or version.
+      placeholder: |
+        - OS: Ubuntu 24.04
+        - Node: 20.x
+        - pnpm: 9.12.0
+        - Component: api
+        - Commit: abc1234
+    validations:
+      required: true
