@@ -19,6 +19,15 @@ export async function createApp(): Promise<INestApplication> {
 
 async function bootstrap() {
   const app = await createApp();
+  if (process.env.NODE_ENV !== "test") {
+    const { startProvisionWorker } = await import("./provision/provision.processor.js");
+    const { ServersService } = await import("./servers/servers.service.js");
+    const svc = app.get(ServersService);
+    startProvisionWorker((serverId) => svc.getSshCredentials(serverId), {
+      publicKey: process.env.PROVISION_PUBLIC_KEY ?? "",
+      acmeEmail: process.env.ACME_EMAIL ?? "ops@example.com",
+    });
+  }
   await app.listen(process.env.API_PORT ?? 4000);
 }
 
