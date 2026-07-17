@@ -52,13 +52,16 @@ model Session {
 }
 
 model Server {
-  id        String         @id @default(cuid())
-  name      String
-  host      String
-  teamId    String
-  createdAt DateTime       @default(now())
-  team      Team           @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  runs      ProvisionRun[]
+  id           String         @id @default(cuid())
+  name         String
+  host         String
+  sshUser      String         @default("root")
+  sshPort      Int            @default(22)
+  sshKeyCipher String?
+  teamId       String
+  createdAt    DateTime       @default(now())
+  team         Team           @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  runs         ProvisionRun[]
 }
 
 model ProvisionRun {
