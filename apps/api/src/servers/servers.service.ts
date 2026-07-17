@@ -56,6 +56,7 @@ export class ServersService {
       user: server.sshUser,
       port: server.sshPort,
       privateKey: decryptSecret(server.sshKeyCipher),
+      hostKeyFingerprint: server.hostKeyFingerprint,
     };
   }
 }

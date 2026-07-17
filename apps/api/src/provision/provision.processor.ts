@@ -1,12 +1,25 @@
 import { Worker } from "bullmq";
 import { prisma } from "@deployhaven/db";
 import { SshRunner } from "./ssh-runner.js";
-import { runPipeline } from "./module.js";
+import { runPipeline, type StepResult } from "./module.js";
 import { buildModules } from "./provision.pipeline.js";
 import { PROVISION_QUEUE } from "../queue/queue.module.js";
 
+/**
+ * Bir StepResult'ı ProvisionRun satırına eşler (saf, test edilebilir).
+ * FIND-008: hata mesajı yalnızca `failed` durumunda kalıcı olur; aksi halde null.
+ */
+export function toProvisionRunData(serverId: string, step: StepResult) {
+  return {
+    serverId,
+    step: step.id,
+    status: step.status,
+    error: step.status === "failed" ? step.error ?? null : null,
+  };
+}
+
 export function startProvisionWorker(getCreds: (serverId: string) => Promise<{
-  host: string; user: string; port: number; privateKey: string;
+  host: string; user: string; port: number; privateKey: string; hostKeyFingerprint: string | null;
 }>, opts: { publicKey: string; acmeEmail: string }) {
   return new Worker(
     PROVISION_QUEUE,
@@ -14,13 +27,22 @@ export function startProvisionWorker(getCreds: (serverId: string) => Promise<{
       const { serverId } = job.data as { serverId: string };
       const creds = await getCreds(serverId);
       const runner = await SshRunner.connect({
-        host: creds.host, port: creds.port, username: creds.user, privateKey: creds.privateKey,
+        host: creds.host,
+        port: creds.port,
+        username: creds.user,
+        privateKey: creds.privateKey,
+        expectedFingerprint: creds.hostKeyFingerprint,
       });
+      // FIND-001 TOFU: ilk bağlantıda gözlenen host-key fingerprint'ini pinle.
+      if (!creds.hostKeyFingerprint && runner.hostKeyFingerprint) {
+        await prisma.server.update({
+          where: { id: serverId },
+          data: { hostKeyFingerprint: runner.hostKeyFingerprint },
+        });
+      }
       try {
         await runPipeline(runner, buildModules(opts), async (step) => {
-          await prisma.provisionRun.create({
-            data: { serverId, step: step.id, status: step.status },
-          });
+          await prisma.provisionRun.create({ data: toProvisionRunData(serverId, step) });
         });
       } finally {
         runner.close();
