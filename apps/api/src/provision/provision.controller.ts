@@ -1,6 +1,7 @@
-import { Controller, Get, Inject, Param, Post, HttpCode, UseGuards } from "@nestjs/common";
+import { Controller, Get, Inject, Param, Post, HttpCode, UseGuards, Sse, MessageEvent } from "@nestjs/common";
 import { Queue } from "bullmq";
 import { prisma } from "@deployhaven/db";
+import { interval, switchMap, from, map } from "rxjs";
 import { SessionGuard } from "../auth/session.guard.js";
 import { PROVISION_QUEUE } from "../queue/queue.module.js";
 
@@ -22,5 +23,20 @@ export class ProvisionController {
       where: { serverId: id },
       orderBy: { createdAt: "asc" },
     });
+  }
+
+  @Sse("stream")
+  stream(@Param("id") id: string) {
+    return interval(2000).pipe(
+      switchMap(() =>
+        from(
+          prisma.provisionRun.findMany({
+            where: { serverId: id },
+            orderBy: { createdAt: "asc" },
+          }),
+        ),
+      ),
+      map((rows): MessageEvent => ({ data: rows })),
+    );
   }
 }
