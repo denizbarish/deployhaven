@@ -52,22 +52,40 @@ model Session {
 }
 
 model Server {
-  id        String         @id @default(cuid())
-  name      String
-  host      String
-  teamId    String
-  createdAt DateTime       @default(now())
-  team      Team           @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  runs      ProvisionRun[]
+  id           String         @id @default(cuid())
+  name         String
+  host         String
+  sshUser      String         @default("root")
+  sshPort      Int            @default(22)
+  sshKeyCipher String?
+  hostKeyFingerprint String?
+  teamId       String
+  createdAt    DateTime       @default(now())
+  team         Team           @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  runs         ProvisionRun[]
+  agent        Agent?
+}
+
+model Agent {
+  id         String    @id @default(cuid())
+  serverId   String    @unique
+  tokenHash  String    @unique
+  status     String    @default("pending")
+  lastSeenAt DateTime?
+  createdAt  DateTime  @default(now())
+  server     Server    @relation(fields: [serverId], references: [id], onDelete: Cascade)
 }
 
 model ProvisionRun {
   id        String   @id @default(cuid())
   serverId  String
+  runId     String
   step      String
   status    String
+  error     String?
   createdAt DateTime @default(now())
   server    Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  @@index([serverId, runId])
 }
 
 model Project {

@@ -19,6 +19,21 @@ export async function createApp(): Promise<INestApplication> {
 
 async function bootstrap() {
   const app = await createApp();
+  if (process.env.NODE_ENV !== "test") {
+    const { startProvisionWorker } = await import("./provision/provision.processor.js");
+    const { ServersService } = await import("./servers/servers.service.js");
+    const svc = app.get(ServersService);
+    // FIND-005 fail-closed: deploy anahtarı olmadan provisioning başlatılmaz
+    // (boş authorized_keys + password auth kapatma = geri-dönüşsüz lockout).
+    const publicKey = process.env.PROVISION_PUBLIC_KEY;
+    if (!publicKey) {
+      throw new Error("PROVISION_PUBLIC_KEY zorunlu: deploy anahtarı olmadan worker başlatılamaz");
+    }
+    startProvisionWorker((serverId) => svc.getSshCredentials(serverId), {
+      publicKey,
+      acmeEmail: process.env.ACME_EMAIL ?? "ops@example.com",
+    });
+  }
   await app.listen(process.env.API_PORT ?? 4000);
 }
 
