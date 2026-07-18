@@ -16,7 +16,11 @@ for (const pass of [1, 2]) {
   const runner = await SshRunner.connect(cfg);
   const res = await runPipeline(runner, mods, (s) => console.log(`pass${pass} ${s.id}: ${s.status}${s.error ? " " + s.error : ""}`));
   runner.close();
-  if (pass === 2 && res.some((r) => r.status === "done")) {
+  // Important #3: precheck yalnizca DOGRULAMA adimidir (OS/sudo kontrolu), durum
+  // MUTASYONU yapmaz; check() daima false doner, bu yuzden her kosuda "done" raporlar.
+  // Idempotency yalnizca durum degistiren adimlar icin anlamlidir: pass 2 icinde
+  // "done" olan bir adim, step id degeri "precheck" DEGILSE idempotency ihlalidir.
+  if (pass === 2 && res.some((r) => r.status === "done" && r.id !== "precheck")) {
     console.error("IDEMPOTENCY HATASI: 2. koşuda done olan adım var"); process.exit(1);
   }
 }
