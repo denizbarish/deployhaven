@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isTerminalRun, FINAL_MODULE_ID, SSE_MAX_TICKS } from "./provision.stream.js";
+import { isTerminalRun, latestRunId, FINAL_MODULE_ID, SSE_MAX_TICKS } from "./provision.stream.js";
 
 describe("isTerminalRun (FIND-004 SSE sonlanma)", () => {
   it("boş liste terminal değildir", () => {
@@ -34,5 +34,28 @@ describe("isTerminalRun (FIND-004 SSE sonlanma)", () => {
 
   it("SSE_MAX_TICKS makul bir üst sınırdır", () => {
     expect(SSE_MAX_TICKS).toBeGreaterThan(0);
+  });
+});
+
+describe("latestRunId (Important #1: en son çalışmayı seçme)", () => {
+  it("satır yoksa null döner", () => {
+    expect(latestRunId([])).toBeNull();
+  });
+
+  it("en büyük createdAt'a sahip satırın runId'sini döner", () => {
+    const rows = [
+      { runId: "run_old", createdAt: new Date("2026-07-18T10:00:00Z") },
+      { runId: "run_old", createdAt: new Date("2026-07-18T10:00:05Z") },
+      { runId: "run_new", createdAt: new Date("2026-07-18T11:00:00Z") },
+    ];
+    expect(latestRunId(rows)).toBe("run_new");
+  });
+
+  it("sıralama bozuk gelse bile en son çalışmayı bulur", () => {
+    const rows = [
+      { runId: "run_new", createdAt: new Date("2026-07-18T11:00:00Z") },
+      { runId: "run_old", createdAt: new Date("2026-07-18T10:00:00Z") },
+    ];
+    expect(latestRunId(rows)).toBe("run_new");
   });
 });

@@ -39,6 +39,75 @@ describe("Provision tetikleme + ilerleme", () => {
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body)).toBe(true);
   });
+
+  it("ardışık iki tetikleme farklı runId üretir (Important #1)", async () => {
+    const first = await request(app.getHttpServer()).post(`/servers/${serverId}/provision`).set("Cookie", cookie);
+    const second = await request(app.getHttpServer()).post(`/servers/${serverId}/provision`).set("Cookie", cookie);
+    expect(first.body.runId).toBeTruthy();
+    expect(second.body.runId).toBeTruthy();
+    expect(first.body.runId).not.toBe(second.body.runId);
+  });
+});
+
+// Important #1: ilerleme yalnızca EN SON çalışmanın satırlarını döndürmeli; taze bir
+// yeniden-provizyon önceki çalışmanın satırlarını içermemeli. Worker olmadan satırları
+// doğrudan yazıp controller'ın runId gruplamasını doğruluyoruz.
+describe("Provision runId gruplaması (Important #1)", () => {
+  let app: INestApplication;
+  let cookie: string;
+  let serverId: string;
+  const groupEmail = "prov-group@dh.test";
+  beforeAll(async () => {
+    app = await createApp();
+    await app.init();
+    const reg = await request(app.getHttpServer()).post("/auth/register").send({ email: groupEmail, password: "password123" });
+    cookie = reg.headers["set-cookie"][0];
+    const srv = await request(app.getHttpServer()).post("/servers").set("Cookie", cookie)
+      .send({ name: "vps", host: "10.0.0.21", sshPrivateKey: "k" });
+    serverId = srv.body.id;
+  });
+  afterAll(async () => {
+    await prisma.user.deleteMany({ where: { email: groupEmail } });
+    await app.close();
+  });
+
+  it("ilerleme yalnızca en son çalışmanın satırlarını döndürür", async () => {
+    // 1. çalışma: terminal (traefik done) geçmiş satırlar
+    await prisma.provisionRun.createMany({
+      data: [
+        { serverId, runId: "run_one", step: "precheck", status: "done" },
+        { serverId, runId: "run_one", step: "traefik", status: "done" },
+      ],
+    });
+    // küçük bir gecikme: 2. çalışma satırları daha yeni createdAt taşısın
+    await new Promise((r) => setTimeout(r, 15));
+    // 2. çalışma: taze, henüz devam ediyor
+    await prisma.provisionRun.createMany({
+      data: [
+        { serverId, runId: "run_two", step: "precheck", status: "done" },
+        { serverId, runId: "run_two", step: "docker", status: "done" },
+      ],
+    });
+
+    const res = await request(app.getHttpServer()).get(`/servers/${serverId}/provision`).set("Cookie", cookie);
+    expect(res.status).toBe(200);
+    const runIds = new Set(res.body.map((r: { runId: string }) => r.runId));
+    // yalnızca en son çalışma (run_two); önceki çalışma (run_one) dahil DEĞİL
+    expect(runIds.has("run_two")).toBe(true);
+    expect(runIds.has("run_one")).toBe(false);
+    expect(res.body).toHaveLength(2);
+  });
+
+  it("?runId= ile belirli bir çalışma hedeflenebilir", async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/servers/${serverId}/provision`)
+      .query({ runId: "run_one" })
+      .set("Cookie", cookie);
+    expect(res.status).toBe(200);
+    const runIds = new Set(res.body.map((r: { runId: string }) => r.runId));
+    expect(runIds.has("run_one")).toBe(true);
+    expect(runIds.has("run_two")).toBe(false);
+  });
 });
 
 // FIND-002 / FIND-004: Başka takımdaki kullanıcı sunucu-kapsamlı provision

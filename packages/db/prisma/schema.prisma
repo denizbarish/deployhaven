@@ -79,11 +79,13 @@ model Agent {
 model ProvisionRun {
   id        String   @id @default(cuid())
   serverId  String
+  runId     String
   step      String
   status    String
   error     String?
   createdAt DateTime @default(now())
   server    Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  @@index([serverId, runId])
 }
 
 model Project {
