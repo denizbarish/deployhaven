@@ -9,7 +9,7 @@ on:
 jobs:
   test:
     name: Build and test
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, deployhaven-ci]
 
     env:
       NODE_ENV: test
@@ -44,14 +44,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Enable corepack
-        run: corepack enable
-
+      # ci01 runner imajında node yok: önce node, sonra corepack. pnpm deposu runner'da kalıcı (pnpm_config_store_dir).
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: pnpm
+
+      - name: Enable corepack
+        run: corepack enable
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
